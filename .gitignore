@@ -16,4 +16,4 @@ media
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
-/rally_integration/credentials/
+rally_integration/credentials/
