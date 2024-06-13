@@ -25,9 +25,11 @@ def get_connection():
     print(gspread_client.auth.signer_email)
 
 
-def add_data_to_sheet(worksheet, data):
+def clear_spreadsheet(worksheet):
     worksheet.clear()
 
+
+def add_data_to_sheet(worksheet, data):
     rows = len(data)
     cols = len(data[0])
     cell_range = f'A1:{chr(65 + cols - 1)}{rows}'

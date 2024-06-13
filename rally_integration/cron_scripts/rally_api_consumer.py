@@ -1,40 +1,11 @@
 import requests
 from django_cron import CronJobBase, Schedule
 
-from rally_integration.connection.spreadsheet_connection import get_connection, add_data_to_sheet
+from rally_integration.connection.spreadsheet_connection import get_connection, add_data_to_sheet, clear_spreadsheet
+from rally_integration.cron_scripts.rally_functions import headers, get_project, RALLY_STORIES
 
 # Configurações
-RALLY_URL = 'https://rally1.rallydev.com/slm/webservice/1.29/subscription.js?fetch=Workspaces,Projects,Name&pretty=true'
-RALLY_STORIES = 'https://rally1.rallydev.com/slm/webservice/v2.0/hierarchicalrequirement?query=' \
-                '(Project.ObjectID = :project_id)&start=:start_index&pagesize=:page_size'
-
 project_wings = ['Wings Ranger', 'Wings Mustang']
-
-headers = {
-    # 'Authorization': f'Bearer {API_KEY}',
-    'Content-Type': 'application/json',
-    'zsessionid': '_AMFr0GPRQrKZMoDMDTP1C9fpxyxU3Xs8pbUcYC1RY'
-}
-
-
-def get_project():
-    response = requests.get(RALLY_URL, headers=headers)
-    if response.status_code == 200:
-        workspaces = response.json()['Subscription']['Workspaces']
-        projects_list = []
-        for workspace in workspaces:
-            projects = workspace['Projects']
-            for project in projects:
-                project_info = {
-                    'Name': project['Name'],
-                    'ID': project['_ref'].split('/')[-1].replace('.js', ''),
-                    'URL': project['_ref']
-                }
-                projects_list.append(project_info)
-
-        return projects_list
-    else:
-        print(response)
 
 
 def get_stories(project):
@@ -79,7 +50,7 @@ def get_stories(project):
 
     spreadsheet = get_connection()
     worksheet = spreadsheet.worksheet(project['Name'])
-
+    clear_spreadsheet(worksheet)
     add_data_to_sheet(worksheet, data)
 
 
@@ -126,7 +97,7 @@ def get_story_detail(project, story, line):
                 todo]
 
 
-class ConsumerCron(CronJobBase):
+class RallyConsumerCron(CronJobBase):
     RUN_EVERY_MIN = 1
     ALLOW_PARALLEL_RUNS = True
     schedule = Schedule(run_every_mins=RUN_EVERY_MIN)
