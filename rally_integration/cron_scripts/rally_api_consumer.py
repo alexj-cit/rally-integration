@@ -79,8 +79,10 @@ def get_sprint(date_str):
         start_date = datetime.strptime(start_date_str, "%d/%b/%y")
         end_date = datetime.strptime(end_date_str, "%d/%b/%y")
 
-        if start_date <= date <= end_date:
+        if start_date.date() <= date.date() <= end_date.date():
             return sprint_name
+
+    return date_str
 
 
 def get_story_detail(project, story, line):
@@ -117,11 +119,17 @@ def get_story_detail(project, story, line):
                         dev_count += 1
 
         sheet = f"'{project['Name']} - Sprints'"
-        dev_start = f'=IFERROR(VLOOKUP(A{line + 1},{sheet}!A2:D,4,FALSE),"")'
         dev_finish = f'=IFERROR(VLOOKUP(A{line + 1},{sheet}!A2:E,5,FALSE),"")'
 
+        in_progress_date = response_json['InProgressDate']
+        dev_start = ''
+        if in_progress_date is not None:
+            dev_start = get_sprint(format_creation_date(in_progress_date))
+
         accepted_date = response_json['AcceptedDate']
-        buss_accept = get_sprint(format_creation_date(accepted_date))
+        buss_accept = ''
+        if accepted_date is not None:
+            buss_accept = get_sprint(format_creation_date(accepted_date))
 
         return [us_number, summary, status, points, dev_start, dev_finish, buss_accept, '',
                 tasks_count, dev_count, business_count, estimate,
