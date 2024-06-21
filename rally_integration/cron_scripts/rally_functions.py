@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime
 
 RALLY_URL = 'https://rally1.rallydev.com/slm/webservice/1.29/subscription.js?fetch=Workspaces,Projects,Name&pretty=true'
 
@@ -34,3 +35,10 @@ def get_project():
         return projects_list
     else:
         print(response)
+
+
+def format_creation_date(date_to_be_format):
+    if not date_to_be_format:
+        return " "
+    creation_date = datetime.strptime(date_to_be_format, "%Y-%m-%dT%H:%M:%S.%fZ")
+    return creation_date.strftime("%d/%m/%Y")

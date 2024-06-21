@@ -1,11 +1,14 @@
 import requests
 from django_cron import CronJobBase, Schedule
+from datetime import datetime
 
 from rally_integration.connection.spreadsheet_connection import get_connection, add_data_to_sheet, clear_spreadsheet
-from rally_integration.cron_scripts.rally_functions import headers, get_project, RALLY_STORIES
+from rally_integration.cron_scripts.rally_functions import headers, get_project, RALLY_STORIES, format_creation_date
 
-# Configurações
+# Settings
 project_wings = ['Wings Ranger', 'Wings Mustang']
+
+sprint_spreadsheet = None
 
 
 def get_stories(project):
@@ -20,7 +23,7 @@ def get_stories(project):
     story_count = 0
 
     print("Project: " + project['Name'])
-    percentagem = 0
+    evolution = 0
 
     while has_more:
         url = RALLY_STORIES.replace(':project_id', project['ID']).replace(':start_index',
@@ -39,8 +42,8 @@ def get_stories(project):
 
         for story in stories:
             story_count += 1
-            percentagem = (100 * story_count) / total_result_count
-            print(f"Progress: {percentagem:.2f}%")
+            evolution = (100 * story_count) / total_result_count
+            print(f"Progress: {evolution:.2f}%")
             data.append(get_story_detail(project, story, story_count))
 
         if story_count >= total_result_count:
@@ -52,6 +55,32 @@ def get_stories(project):
     worksheet = spreadsheet.worksheet(project['Name'])
     clear_spreadsheet(worksheet)
     add_data_to_sheet(worksheet, data)
+
+
+def get_sprint(date_str):
+    global sprint_spreadsheet
+
+    if not date_str or date_str.strip() == '':
+        return date_str
+
+    if sprint_spreadsheet is None:
+        spreadsheet = get_connection()
+        sprint_spreadsheet = spreadsheet.worksheet('Sprints - Config')
+
+    rows = sprint_spreadsheet.get_all_values()
+
+    date = datetime.strptime(date_str, "%d/%m/%Y")
+
+    for row in rows[1:]:
+        sprint_name = row[0]
+        start_date_str = row[1]
+        end_date_str = row[2]
+
+        start_date = datetime.strptime(start_date_str, "%d/%b/%y")
+        end_date = datetime.strptime(end_date_str, "%d/%b/%y")
+
+        if start_date <= date <= end_date:
+            return sprint_name
 
 
 def get_story_detail(project, story, line):
@@ -90,9 +119,11 @@ def get_story_detail(project, story, line):
         sheet = f"'{project['Name']} - Sprints'"
         dev_start = f'=IFERROR(VLOOKUP(A{line + 1},{sheet}!A2:D,4,FALSE),"")'
         dev_finish = f'=IFERROR(VLOOKUP(A{line + 1},{sheet}!A2:E,5,FALSE),"")'
-        bus_accept = f'=IFERROR(VLOOKUP(A{line + 1},{sheet}!A2:F,6,FALSE),"")'
 
-        return [us_number, summary, status, points, dev_start, dev_finish, bus_accept, '',
+        accepted_date = response_json['AcceptedDate']
+        buss_accept = get_sprint(format_creation_date(accepted_date))
+
+        return [us_number, summary, status, points, dev_start, dev_finish, buss_accept, '',
                 tasks_count, dev_count, business_count, estimate,
                 todo]
 

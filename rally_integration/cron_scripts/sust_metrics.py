@@ -3,11 +3,12 @@
 # user stories e defects
 
 import requests
-from datetime import datetime
+
 from django_cron import CronJobBase, Schedule
 
 from rally_integration.connection.spreadsheet_connection import get_connection, add_data_to_sheet, clear_spreadsheet
-from rally_integration.cron_scripts.rally_functions import headers, get_project, RALLY_STORIES, RALLY_DEFECTS
+from rally_integration.cron_scripts.rally_functions import headers, get_project, RALLY_STORIES, RALLY_DEFECTS, \
+    format_creation_date
 
 project_wings = ['Wings Transit']
 
@@ -65,13 +66,6 @@ def get_itens(project, issue_type):
             start_index += page_size
 
     return data
-
-
-def format_creation_date(date_to_be_format):
-    if not date_to_be_format:
-        return " "
-    creation_date = datetime.strptime(date_to_be_format, "%Y-%m-%dT%H:%M:%S.%fZ")
-    return creation_date.strftime("%d/%m/%Y")
 
 
 def get_story_detail(project, story, line, header):
