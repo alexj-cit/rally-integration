@@ -71,7 +71,7 @@ def format_creation_date(date_to_be_format):
     if not date_to_be_format:
         return " "
     creation_date = datetime.strptime(date_to_be_format, "%Y-%m-%dT%H:%M:%S.%fZ")
-    return creation_date.strftime("%d-%m-%Y %H:%M")
+    return creation_date.strftime("%d/%m/%Y")
 
 
 def get_story_detail(project, story, line, header):
