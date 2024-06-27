@@ -8,7 +8,7 @@ from django_cron import CronJobBase, Schedule
 
 from rally_integration.connection.spreadsheet_connection import get_connection, add_data_to_sheet, clear_spreadsheet
 from rally_integration.cron_scripts.rally_functions import headers, get_project, RALLY_STORIES, RALLY_DEFECTS, \
-    format_creation_date
+    format_creation_date_us_format
 
 project_wings = ['Wings Transit']
 
@@ -77,9 +77,9 @@ def get_story_detail(project, story, line, header):
         summary = response_json['_refObjectName']
         status = response_json['FlowState']['_refObjectName']
         owner = response_json['Owner']['_refObjectName'] if response_json.get('Owner') else ''
-        creation_date = format_creation_date(response_json['CreationDate'])
-        in_progress_date = format_creation_date(response_json['InProgressDate'])
-        accepted_date = format_creation_date(response_json['AcceptedDate'])
+        creation_date = format_creation_date_us_format(response_json['CreationDate'])
+        in_progress_date = format_creation_date_us_format(response_json['InProgressDate'])
+        accepted_date = format_creation_date_us_format(response_json['AcceptedDate'])
 
         tags_list = []
         if 'Tags' in response_json and '_tagsNameArray' in response_json['Tags']:

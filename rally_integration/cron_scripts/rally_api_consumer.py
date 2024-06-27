@@ -119,7 +119,7 @@ def get_story_detail(project, story, line):
                         dev_count += 1
 
         sheet = f"'{project['Name']} - Sprints'"
-        dev_finish = f'=IFERROR(VLOOKUP(A{line + 1},{sheet}!A2:E,5,FALSE),"")'
+        dev_finish = f'=IFERROR(VLOOKUP(A{line + 1},{sheet}!A2:B,2,FALSE),"")'
 
         in_progress_date = response_json['InProgressDate']
         dev_start = ''
