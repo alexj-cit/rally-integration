@@ -15,10 +15,12 @@ credentials_path = os.getenv('GOOGLE_CREDENTIALS_PATH')
 def get_connection():
     gspread_client = gspread.service_account(filename=credentials_path)
     # list all available spreadsheets
-    sp = gspread_client.openall()
-    for spreadsheet in sp:
-        if spreadsheet.id == SPREADSHEET_ID:
-            return spreadsheet
+    # sp = gspread_client.openall()
+    spreadsheet = gspread_client.open_by_key(SPREADSHEET_ID)
+    return spreadsheet
+    # for spreadsheet in sp:
+    #     if spreadsheet.id == SPREADSHEET_ID:
+    #         return spreadsheet
 
     print("No spreadsheets available")
     print("Please share the spreadsheet with Service Account email")
