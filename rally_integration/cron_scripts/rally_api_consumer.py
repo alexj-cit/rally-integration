@@ -9,6 +9,7 @@ from rally_integration.cron_scripts.rally_functions import headers, get_project,
 project_wings = ['Wings Ranger', 'Wings Mustang']
 
 sprint_spreadsheet = None
+rows_sprints = None
 
 
 def get_stories(project):
@@ -59,6 +60,7 @@ def get_stories(project):
 
 def get_sprint(date_str):
     global sprint_spreadsheet
+    global rows_sprints
 
     if not date_str or date_str.strip() == '':
         return date_str
@@ -66,12 +68,11 @@ def get_sprint(date_str):
     if sprint_spreadsheet is None:
         spreadsheet = get_connection()
         sprint_spreadsheet = spreadsheet.worksheet('Sprints - Config')
-
-    rows = sprint_spreadsheet.get_all_values()
+        rows_sprints = sprint_spreadsheet.get_all_values()
 
     date = datetime.strptime(date_str, "%d/%m/%Y")
 
-    for row in rows[1:]:
+    for row in rows_sprints[1:]:
         sprint_name = row[0]
         start_date_str = row[1]
         end_date_str = row[2]
