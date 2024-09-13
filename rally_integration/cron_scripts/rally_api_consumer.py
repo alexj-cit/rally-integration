@@ -3,7 +3,8 @@ from django_cron import CronJobBase, Schedule
 from datetime import datetime
 
 from rally_integration.connection.spreadsheet_connection import get_connection, add_data_to_sheet, clear_spreadsheet
-from rally_integration.cron_scripts.rally_functions import headers, get_project, RALLY_STORIES, format_creation_date
+from rally_integration.cron_scripts.rally_functions import headers, get_project, RALLY_STORIES, format_creation_date, \
+    RALLY_DEFECTS
 
 # Settings
 project_wings = ['Wings Ranger', 'Wings Mustang']
@@ -12,24 +13,33 @@ sprint_spreadsheet = None
 rows_sprints = None
 
 
-def get_stories(project):
+def get_stories(project, issue_type):
     start_index = 1
     page_size = 30
 
-    data = [['Issue', 'Summary', 'Status', 'Points', 'Development Start', 'Development Finish', 'Business Accept',
-             'Activate', 'Tasks', 'Development Bugs', 'Business Bugs', 'Estimated', 'To Do']]
+    if issue_type == 'Story':
+        data = [['Issue', 'Summary', 'Status', 'Points', 'Development Start', 'Development Finish', 'Business Accept',
+                'Activate', 'Tasks', 'Development Bugs', 'Business Bugs', 'Estimated', 'To Do']]
+    elif issue_type == 'Defect':
+        data = [['Issue', 'Summary', 'Status', 'Parent', 'Tags', 'Development Start', 'Development Finish', 'Business Accept',
+                 'Activate']]
 
     has_more = True
     total_result_count = 0
     story_count = 0
 
-    print("Project: " + project['Name'])
+    print("Project: " + project['Name'] + ' - ' + issue_type)
     evolution = 0
 
     while has_more:
-        url = RALLY_STORIES.replace(':project_id', project['ID']).replace(':start_index',
-                                                                          str(start_index)).replace(':page_size',
-                                                                                                    str(page_size))
+        if issue_type == 'Story':
+            url = RALLY_STORIES.replace(':project_id', project['ID']).replace(':start_index',
+                                                                              str(start_index)).replace(':page_size',
+                                                                                                        str(page_size))
+        elif issue_type == 'Defect':
+            url = RALLY_DEFECTS.replace(':project_id', project['ID']).replace(':start_index',
+                                                                              str(start_index)).replace(':page_size',
+                                                                                                        str(page_size))
 
         response = requests.get(url, headers=headers)
         if response.status_code != 200:
@@ -45,15 +55,23 @@ def get_stories(project):
             story_count += 1
             evolution = (100 * story_count) / total_result_count
             print(f"Progress: {evolution:.2f}%")
-            data.append(get_story_detail(project, story, story_count))
+            if issue_type == 'Story':
+                header = 'HierarchicalRequirement'
+            elif issue_type == 'Defect':
+                header = 'Defect'
+            data.append(get_story_detail(project, story, story_count, header))
 
         if story_count >= total_result_count:
             has_more = False
         else:
             start_index += page_size
 
+    return data
+
+
+def save_data(sheet_name, data):
     spreadsheet = get_connection()
-    worksheet = spreadsheet.worksheet(project['Name'])
+    worksheet = spreadsheet.worksheet(sheet_name)
     clear_spreadsheet(worksheet)
     add_data_to_sheet(worksheet, data)
 
@@ -86,38 +104,50 @@ def get_sprint(date_str):
     return date_str
 
 
-def get_story_detail(project, story, line):
+def get_story_detail(project, story, line, header):
     response = requests.get(story['_ref'], headers=headers)
 
     if response.status_code == 200:
-        response_json = response.json()['HierarchicalRequirement']
+        response_json = response.json()[header]
         us_number = response_json['FormattedID']
         summary = response_json['_refObjectName']
-        todo = response_json['TaskRemainingTotal']
         status = response_json['FlowState']['_refObjectName']
-        tasks_count = response_json['Tasks']['Count']
-        points = response_json['PlanEstimate']
+        if header == "HierarchicalRequirement":
+            todo = response_json['TaskRemainingTotal']
+            tasks_count = response_json['Tasks']['Count']
+            points = response_json['PlanEstimate']
 
-        estimate = response_json['TaskEstimateTotal']
-        if not estimate:
-            estimate = 0.0
+            estimate = response_json['TaskEstimateTotal']
+            if not estimate:
+                estimate = 0.0
 
-        defects_count = response_json['Defects']['Count']
-        business_count = 0
-        dev_count = 0
-        if defects_count > 0:
+            defects_count = response_json['Defects']['Count']
             business_count = 0
             dev_count = 0
+            if defects_count > 0:
+                business_count = 0
+                dev_count = 0
 
-            defect = response_json['Defects']
-            defect_response = requests.get(defect['_ref'], headers=headers)
-            if defect_response.status_code == 200:
-                defect_return = defect_response.json()['QueryResult']['Results']
-                for result in defect_return:
-                    if result['Environment'] == 'Test':
-                        business_count += 1
-                    else:
-                        dev_count += 1
+                defect = response_json['Defects']
+                defect_response = requests.get(defect['_ref'], headers=headers)
+                if defect_response.status_code == 200:
+                    defect_return = defect_response.json()['QueryResult']['Results']
+                    for result in defect_return:
+                        if result['Environment'] == 'Test':
+                            business_count += 1
+                        else:
+                            dev_count += 1
+        elif header == "Defect":
+            parent = ""
+            requirement = response_json.get('Requirement')
+            if requirement and '_refObjectName' in requirement:
+                parent = requirement['_refObjectName']
+                parent = f'''=IFERROR(FILTER('{project["Name"]}'!A:A, '{project["Name"]}'!B:B = "{parent.replace('"', '""')}"),"")'''
+
+            tags_list = []
+            if 'Tags' in response_json and '_tagsNameArray' in response_json['Tags']:
+                tags_list = [tag['Name'] for tag in response_json['Tags']['_tagsNameArray']]
+            tags = " ".join(tags_list)
 
         sheet = f"'{project['Name']} - Sprints'"
         dev_finish = f'=IFERROR(VLOOKUP(A{line + 1},{sheet}!A2:B,2,FALSE),"")'
@@ -133,9 +163,12 @@ def get_story_detail(project, story, line):
         if accepted_date is not None:
             buss_accept = get_sprint(format_creation_date(accepted_date))
 
-        return [us_number, summary, status, points, dev_start, dev_finish, buss_accept, activated,
-                tasks_count, dev_count, business_count, estimate,
-                todo]
+        if header == 'HierarchicalRequirement':
+            return [us_number, summary, status, points, dev_start, dev_finish, buss_accept, activated,
+                    tasks_count, dev_count, business_count, estimate,
+                    todo]
+        elif header == 'Defect':
+            return [us_number, summary, status, parent, tags, dev_start, dev_finish, buss_accept, activated]
 
 
 class RallyConsumerCron(CronJobBase):
@@ -148,4 +181,8 @@ class RallyConsumerCron(CronJobBase):
     projects = get_project()
     for project in projects:
         if project['Name'] in project_wings:
-            get_stories(project)
+            data = get_stories(project, 'Story')
+            save_data(project['Name'], data)
+
+            data = get_stories(project, 'Defect')
+            save_data(project['Name'] + ' - Defects', data)

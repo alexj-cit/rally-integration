@@ -27,7 +27,7 @@ def get_itens(project, issue_type):
     total_result_count = 0
     item_count = 0
 
-    print("Project: " + project['Name'])
+    print("Project: " + project['Name'] + " - " + issue_type)
     percentagem = 0
 
     while has_more:
