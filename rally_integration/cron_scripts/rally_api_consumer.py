@@ -8,6 +8,7 @@ from rally_integration.cron_scripts.rally_functions import headers, get_project,
 
 # Settings
 project_wings = ['Wings Ranger', 'Wings Mustang']
+# project_wings = ['Wings Mustang']
 
 sprint_spreadsheet = None
 rows_sprints = None
@@ -55,11 +56,15 @@ def get_stories(project, issue_type):
             story_count += 1
             evolution = (100 * story_count) / total_result_count
             print(f"Progress: {evolution:.2f}%")
+            # print(f"Story Count: {story_count}")
             if issue_type == 'Story':
                 header = 'HierarchicalRequirement'
             elif issue_type == 'Defect':
                 header = 'Defect'
-            data.append(get_story_detail(project, story, story_count, header))
+            story_detail = get_story_detail(project, story, story_count, header)
+            # print(f"Story Count: {story_count} - Story Detail:{story_detail}")
+            if story_detail is not None:
+                data.append(story_detail)
 
         if story_count >= total_result_count:
             has_more = False

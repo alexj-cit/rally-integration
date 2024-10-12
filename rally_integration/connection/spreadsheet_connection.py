@@ -36,4 +36,4 @@ def add_data_to_sheet(worksheet, data):
     cols = len(data[0])
     cell_range = f'A1:{chr(65 + cols - 1)}{rows}'
 
-    worksheet.update(cell_range, data)
+    worksheet.update(cell_range, data, value_input_option='USER_ENTERED')

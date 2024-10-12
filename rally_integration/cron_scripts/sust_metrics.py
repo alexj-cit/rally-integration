@@ -58,7 +58,9 @@ def get_itens(project, issue_type):
                 header = 'HierarchicalRequirement'
             elif issue_type == 'Defect':
                 header = 'Defect'
-            data.append(get_story_detail(project, item, item_count, header))
+            story_detail = get_story_detail(project, item, item_count, header)
+            if story_detail is not None:
+                data.append(story_detail)
 
         if item_count >= total_result_count:
             has_more = False
