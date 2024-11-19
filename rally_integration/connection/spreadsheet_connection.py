@@ -15,7 +15,7 @@ def get_connection():
     print("Getting Credentials...")
     BASE_DIR = Path(__file__).resolve().parent.parent  # Ajuste conforme sua estrutura
     credentials_path = BASE_DIR / os.getenv('GOOGLE_CREDENTIALS_PATH')
-    print(f"Credentials path: {credentials_path}")
+
     gspread_client = gspread.service_account(filename=credentials_path)
     # list all available spreadsheets
     # sp = gspread_client.openall()
@@ -32,6 +32,7 @@ def get_connection():
 
 
 def clear_spreadsheet(worksheet):
+    print("Cleaning...")
     worksheet.clear()
 
 
@@ -39,5 +40,5 @@ def add_data_to_sheet(worksheet, data):
     rows = len(data)
     cols = len(data[0])
     cell_range = f'A1:{chr(65 + cols - 1)}{rows}'
-
+    print("Saving...")
     worksheet.update(cell_range, data, value_input_option='USER_ENTERED')
