@@ -3,6 +3,7 @@
 # user stories e defects
 
 import requests
+import pandas as pd
 
 from django_cron import CronJobBase, Schedule
 
@@ -19,7 +20,7 @@ def get_itens(project, issue_type):
 
     if issue_type == 'Story':
         data = [['Issue', 'Summary', 'Status', 'Owner', 'Creation Date', 'In-Progress Date', 'Accepted Date',
-                 'Tags', 'Iteration', 'Priority']]
+                 'Tags', 'Iteration', 'Priority', 'Work Days']]
     else:
         data = []
 
@@ -83,6 +84,13 @@ def get_story_detail(project, story, line, header):
         in_progress_date = format_creation_date_us_format(response_json['InProgressDate'])
         accepted_date = format_creation_date_us_format(response_json['AcceptedDate'])
 
+        if accepted_date == " ":
+            days_open = pd.date_range(start=creation_date, end=pd.Timestamp.now())
+        else:
+            days_open = pd.date_range(start=creation_date, end=accepted_date)
+        work_days = days_open[days_open.dayofweek < 5]
+        num_work_days = len(work_days)
+
         tags_list = []
         if 'Tags' in response_json and '_tagsNameArray' in response_json['Tags']:
             tags_list = [tag['Name'] for tag in response_json['Tags']['_tagsNameArray']]
@@ -95,7 +103,7 @@ def get_story_detail(project, story, line, header):
             priority = response_json['c_Priority']
 
         return [us_number, summary, status, owner, creation_date, in_progress_date, accepted_date, tags,
-                iteration, priority]
+                iteration, priority, num_work_days]
 
 
 class RallyConsumerTransitCron(CronJobBase):

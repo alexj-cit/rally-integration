@@ -1,6 +1,7 @@
 import gspread
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -9,13 +10,16 @@ SPREADSHEET_ID = '11NiIWdDtWTI5cXXjFXPIhadbnNkLY4Lp--7ieS83-70'
 
 load_dotenv()
 
-credentials_path = os.getenv('GOOGLE_CREDENTIALS_PATH')
-
 
 def get_connection():
+    print("Getting Credentials...")
+    BASE_DIR = Path(__file__).resolve().parent.parent  # Ajuste conforme sua estrutura
+    credentials_path = BASE_DIR / os.getenv('GOOGLE_CREDENTIALS_PATH')
+    print(f"Credentials path: {credentials_path}")
     gspread_client = gspread.service_account(filename=credentials_path)
     # list all available spreadsheets
     # sp = gspread_client.openall()
+    print("Opening Metrics File...")
     spreadsheet = gspread_client.open_by_key(SPREADSHEET_ID)
     return spreadsheet
     # for spreadsheet in sp:
