@@ -13,7 +13,7 @@ RALLY_DEFECTS = 'https://rally1.rallydev.com/slm/webservice/v2.0/defects?query='
 headers = {
     # 'Authorization': f'Bearer {API_KEY}',
     'Content-Type': 'application/json',
-    'zsessionid': '_AMFr0GPRQrKZMoDMDTP1C9fpxyxU3Xs8pbUcYC1RY'
+    'zsessionid': '_B7WrOkAPSPavaK4xq2CUqtCfCesR0b7reJXKHxrdec'
 }
 
 
