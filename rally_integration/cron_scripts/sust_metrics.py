@@ -9,7 +9,7 @@ from django_cron import CronJobBase, Schedule
 
 from rally_integration.connection.spreadsheet_connection import get_connection, add_data_to_sheet, clear_spreadsheet
 from rally_integration.cron_scripts.rally_functions import headers, get_project, RALLY_STORIES, RALLY_DEFECTS, \
-    format_creation_date_us_format
+    format_creation_date_us_format, format_sla_as_time_string, add_business_hours, calculate_business_hours
 
 project_wings = ['Wings Transit']
 
@@ -20,7 +20,8 @@ def get_itens(project, issue_type):
 
     if issue_type == 'Story':
         data = [['Issue', 'Summary', 'Status', 'Owner', 'Creation Date', 'In-Progress Date', 'Accepted Date',
-                 'Tags', 'Iteration', 'Priority', 'Work Days']]
+                 'Tags', 'Iteration', 'Priority', 'Work Days', 'Expected SLA (Time)', 'Expected SLA (Hours)',
+                 'Executed SLA']]
     else:
         data = []
 
@@ -99,11 +100,28 @@ def get_story_detail(project, story, line, header):
         iteration = response_json['Iteration']['_refObjectName'] if response_json.get('Iteration') else ''
         if header == 'Defect':
             priority = response_json['Priority']
+
+            if priority == "Resolve Immediately":
+                sla = format_sla_as_time_string(response_json['CreationDate'], 2)
+                expected_sla = 2
+            elif priority == "High Attention":
+                sla = add_business_hours(response_json['CreationDate'], 6)
+                expected_sla = 6
+            else:
+                sla = add_business_hours(response_json['CreationDate'], 24)
+                expected_sla = 24
         else:
             priority = response_json['c_Priority']
+            expected_sla = ""
+            sla = ""
+
+        if response_json['AcceptedDate'] is not None:
+            executed_sla = calculate_business_hours(response_json['CreationDate'], response_json['AcceptedDate'])
+        else:
+            executed_sla = ""
 
         return [us_number, summary, status, owner, creation_date, in_progress_date, accepted_date, tags,
-                iteration, priority, num_work_days]
+                iteration, priority, num_work_days, sla, expected_sla, executed_sla]
 
 
 class RallyConsumerTransitCron(CronJobBase):
