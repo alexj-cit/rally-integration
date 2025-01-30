@@ -78,8 +78,6 @@ def get_story_detail(project, story, line, header):
     if response.status_code == 200:
         response_json = response.json()[header]
         us_number = response_json['FormattedID']
-        if us_number == "DE348464":
-            us_number = us_number
         summary = response_json['_refObjectName']
         status = response_json['FlowState']['_refObjectName']
         owner = response_json['Owner']['_refObjectName'] if response_json.get('Owner') else ''
