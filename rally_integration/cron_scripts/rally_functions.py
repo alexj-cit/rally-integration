@@ -1,4 +1,5 @@
 import requests
+import pytz
 from datetime import datetime, timedelta
 
 RALLY_URL = 'https://rally1.rallydev.com/slm/webservice/1.29/subscription.js?fetch=Workspaces,Projects,Name&pretty=true'
@@ -40,6 +41,7 @@ def format_creation_date(date_to_be_format):
     if not date_to_be_format:
         return " "
     creation_date = datetime.strptime(date_to_be_format, "%Y-%m-%dT%H:%M:%S.%fZ")
+
     return creation_date.strftime("%d/%m/%Y")
 
 
@@ -47,7 +49,9 @@ def format_creation_date_us_format(date_to_be_format):
     if not date_to_be_format:
         return " "
     creation_date = datetime.strptime(date_to_be_format, "%Y-%m-%dT%H:%M:%S.%fZ")
-    return creation_date.strftime("%m/%d/%Y %H:%M:%S")
+
+    return br_timezone(creation_date)
+    # return creation_date.strftime("%m/%d/%Y %H:%M:%S")
 
 
 def format_sla_as_time_string(date_to_be_format, sla):
@@ -57,7 +61,18 @@ def format_sla_as_time_string(date_to_be_format, sla):
     sla_date = datetime.strptime(date_to_be_format, "%Y-%m-%dT%H:%M:%S.%fZ")
     sla_date += timedelta(hours=sla)
 
-    return sla_date.strftime("%m/%d/%Y %H:%M:%S")
+    return br_timezone(sla_date)
+    # return sla_date.strftime("%m/%d/%Y %H:%M:%S")
+
+
+def br_timezone(date):
+    utc_timezone = pytz.utc
+    aware_datetime = date.replace(tzinfo=utc_timezone)
+
+    brasilia_timezone = pytz.timezone('America/Sao_Paulo')  # Ou 'Brazil/East'
+    brasilia_datetime = aware_datetime.astimezone(brasilia_timezone)
+
+    return brasilia_datetime.strftime("%m/%d/%Y %H:%M:%S")
 
 
 def add_business_hours(start_date, hours):
